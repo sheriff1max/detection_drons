@@ -1,6 +1,7 @@
 import streamlit as st
 import cv2
 import math
+from datetime import datetime
 from ultralytics import YOLO
 
 import tkinter as tk
@@ -32,19 +33,19 @@ if model:
 
     # Confidence
     confidence = st.sidebar.slider(
-        'Detection Confidence', min_value=0.0, max_value=1.0, value=0.25)
+        'Порог достоверности', min_value=0.0, max_value=1.0, value=0.25)
 
     # Draw thickness
     draw_thick = st.sidebar.slider(
-        'Draw Thickness:', min_value=1,
+        'Порог пересечения:', min_value=1,
         max_value=20, value=3
     )
 
     # Web-cam
-    cam_options = st.sidebar.selectbox('Webcam Channel',
-                                    ('Select Channel', '0', '1', '2', '3'))
+    cam_options = st.sidebar.selectbox('Канал-вебкамеры',
+                                    ('Выберите веб-камеру', '0', '1', '2', '3'))
 
-    if cam_options != 'Select Channel':
+    if cam_options != 'Выберите веб-камеру':
         cap = cv2.VideoCapture(int(cam_options))
 
 
@@ -59,10 +60,12 @@ if cap:
         results = model(img, stream=True)
 
         # coordinates
+        counter = 0
         for r in results:
             boxes = r.boxes
 
             for box in boxes:
+                counter += 1
                 # bounding box
                 x1, y1, x2, y2 = box.xyxy[0]
                 x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2) # convert to int values
@@ -86,6 +89,10 @@ if cap:
                 thickness = 2
 
                 cv2.putText(img, class_labels[cls], org, font, fontScale, color, thickness)
+
+        if counter > 0:
+            with open('log.txt', '+a') as f:
+                f.write(f'{datetime.now()} {counter}\n')
 
         FRAME_WINDOW.image(img, channels='BGR')
 
